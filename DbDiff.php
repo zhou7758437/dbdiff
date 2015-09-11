@@ -30,9 +30,12 @@ class DbDiff {
 			return null;
 		}
 
+
 		if (!mysql_select_db($config['name'], $db)) {
 			return null;
 		}
+
+	
 
 		$result = mysql_query("SHOW TABLES");
 		while ($row = mysql_fetch_row($result)) {
@@ -40,10 +43,16 @@ class DbDiff {
 		}
 
 		foreach ($tables as $table_name => $fields) {
-
 			$result = mysql_query("SHOW COLUMNS FROM " . $table_name, $db);
+			
 			while ($row = mysql_fetch_assoc($result)) {
 				$tables[$table_name][$row['Field']] = $row;
+			}
+
+			$rowsresult = mysql_query("SHOW full fields FROM " . $table_name, $db);
+			while ($row = mysql_fetch_assoc($rowsresult)) {
+				//有中文乱码问题，暂不启用
+				//$tables[$table_name][$row['Field']]['Comment']=$row['Comment'];
 			}
 		}
 
@@ -56,6 +65,28 @@ class DbDiff {
 		);
 
 		return $data;
+	}
+
+	function getRecommendation($config,$sql,$target){
+		$db = @mysql_connect($config['host'], $config['user'],
+			$config['password']);
+
+		if (!$db) {
+			return null;
+		}
+
+		if (!mysql_select_db($config['name'], $db)) {
+			return null;
+		}
+		/**
+		* SHOW CREATE TABLE {$target}
+		* ALTER TABLE `{$config['name']}`.`{$target}` ADD COLUMN `6y756` VARCHAR(45) NULL  AFTER `DataChange_LastTime` ;
+		*/
+		$result = mysql_query($sql.' '.$target);
+		mysql_close();
+
+
+		return $result;
 	}
 
 	/**
@@ -80,18 +111,20 @@ class DbDiff {
 
 			if (!isset($schema1['tables'][$table_name])) {
 
-				$results[$table_name][] = '<em>' . $schema1['name']
-					. '</em> is missing table: <code>' . $table_name
+				$results[$table_name][] = '<em>[' . $schema1['name']
+					. ']</em> is missing table: <code>' . $table_name
 					. '</code>.';
+
+					$result = mysql_query("SHOW CREATE TABLE ".$table_name);
 
 				continue;
 			}
 
 			if (!isset($schema2['tables'][$table_name])) {
 
-				$results[$table_name][] = '<em>' . $schema2['name']
-					. '</em> is missing table: <code>' . $table_name
-					. '</code>.';
+				$results[$table_name][] = '<em class="dest">[' . $schema2['name']
+					. ']</em> is missing table: <code><h3>' . $table_name
+					. '</h3></code>.';
 
 				continue;
 			}
@@ -105,18 +138,18 @@ class DbDiff {
 
 				if (!isset($schema1['tables'][$table_name][$field_name])) {
 
-					$results[$table_name][] = '<em>' . $schema1['name']
-						. '</em> is missing field: <code>' . $field_name
-						. '</code>';
+					$results[$table_name][] = '<em>[' . $schema1['name']
+						. ']</em> is missing field: <code><h3>' . $field_name
+						. '</h3></code>';
 
 					continue;
 				}
 
 				if (!isset($schema2['tables'][$table_name][$field_name])) {
 
-					$results[$table_name][] = '<em>' . $schema2['name']
-						. '</em> is missing field: <code>' . $field_name
-						. '</code>';
+					$results[$table_name][] = '<em class="dest">[' . $schema2['name']
+						. ']</em> is missing field: <code><h3>' . $field_name
+						. '</h3></code>';
 
 					continue;
 				}
@@ -128,7 +161,7 @@ class DbDiff {
 
 				foreach ($s1_params as $name => $details) {
 					if ($s1_params[$name] != $s2_params[$name]) {
-						$results[$table_name][] = 'Field <code>' . $field_name
+						$results[$table_name][] = 'Field <code class="field">' . $field_name
 							. '</code> differs between databases for parameter \''
 							. $name . '\'. <em>' . $schema1['name']
 							. '</em> has \'' . $s1_params[$name]

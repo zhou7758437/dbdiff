@@ -142,7 +142,7 @@ function do_compare($schema1, $schema2) {
 	$unserialized_schema1 = unserialize(strip_nl($schema1));
 	$unserialized_schema2 = unserialize(strip_nl($schema2));
 	
-	$results = DbDiff::compare($unserialized_schema1, $unserialized_schema2);
+	@$results = DbDiff::compare($unserialized_schema1, $unserialized_schema2);
 	
 	if (count($results) > 0) {
 		
@@ -177,7 +177,7 @@ function do_compare($schema1, $schema2) {
 	
 </head>
 <body>
-	
+
 <div id="canvas">
 	
 <h1><a href="?">DbDiff</a></h1>
@@ -242,8 +242,8 @@ switch ($action) {
 			$schema1 = $dbs_config[@$_POST['schema1']];
 			$schema2 = $dbs_config[@$_POST['schema2']];
 
-			$schema1 = serialize(DbDiff::export($schema1['config'], $schema1['name']));
-			$schema2 = serialize(DbDiff::export($schema2['config'], $schema2['name']));
+			@$schema1 = serialize(DbDiff::export($schema1['config'], $schema1['name']));
+			@$schema2 = serialize(DbDiff::export($schema2['config'], $schema2['name']));
 		}
 
 		do_compare($schema1, $schema2);
